@@ -90,13 +90,17 @@ app = FastAPI()
 # WebSocket Endpoint for communication
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    # Accept the WebSocket connection
+    await websocket.accept()  # <- This line is crucial!
+
     # Wait for the client to send its initialization payload
     try:
         init_msg = await websocket.receive_text()
         init_data = json.loads(init_msg)
         client_type = init_data.get("clientType")
         if client_type not in ("local", "online"):
-            raise HTTPException(status_code=400, detail="Invalid clientType")
+            await websocket.close(code=1003)
+            return
     except Exception as e:
         await websocket.close(code=1003)
         return
@@ -121,10 +125,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 await manager.send_message("local", response)
 
             elif action == "command":
-                # Command sending: if local command, forward to online, and vice versa.
-                # Enforce that local commands have priority.
                 if client_type == "online":
-                    # Online app sends a command; forward it if local is connected.
                     if "local" in manager.active_connections:
                         await manager.send_message("local", data)
                         response = {"status": "OK", "message": "Command forwarded to local app"}
@@ -132,7 +133,6 @@ async def websocket_endpoint(websocket: WebSocket):
                         response = {"status": "ERROR", "message": "No local app connected"}
                     await manager.send_message("online", response)
                 elif client_type == "local":
-                    # Local app sends a command; forward to online if connected.
                     if "online" in manager.active_connections:
                         await manager.send_message("online", data)
                         response = {"status": "OK", "message": "Command forwarded to online app"}
@@ -145,6 +145,7 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(client_type)
         print(f"[INFO] {client_type} client disconnected.")
+
 
 # ---------------------------------------------------------------------
 # Optional REST endpoint for health-check
