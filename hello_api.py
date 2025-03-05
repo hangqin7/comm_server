@@ -29,8 +29,7 @@ engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=3, max_overfl
 
 
 def store_data_in_rds(data_dict: dict) -> bool:
-    meta = MetaData(bind=engine)
-    # Reflect the table structure from the database.
+    meta = MetaData()
     table = Table(DB_TABLE, meta, autoload_with=engine)
     conn = engine.connect()
     trans = conn.begin()
