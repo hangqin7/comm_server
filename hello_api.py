@@ -91,6 +91,12 @@ app = FastAPI()
 # WebSocket Endpoint for communication
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    """
+    WS server:
+    Allowed client type: {'local_admin', 'local_datalogger', 'online_admin'}
+    For local_datalogger: store data into RDS Database
+    For local_admin and online_admin: Setup immediate communication
+    """
     # Accept the WebSocket connection once.
     await websocket.accept()
 
@@ -99,7 +105,7 @@ async def websocket_endpoint(websocket: WebSocket):
         init_msg = await websocket.receive_text()
         init_data = json.loads(init_msg)
         client_type = init_data.get("clientType")
-        if client_type not in ("local", "online"):
+        if client_type not in ("local_admin", "online_admin", "local_datalogger"):
             await websocket.close(code=1003)
             return
     except Exception as e:
@@ -118,31 +124,31 @@ async def websocket_endpoint(websocket: WebSocket):
             action = message.get("action")
             data = message.get("data", {})
 
-            if action == "data" and client_type == "local":
+            if action == "streaming" and client_type == "local_datalogger":  # data streaming
                 # Data streaming from local app: store in RDS.
                 success = store_data_in_rds(data)
                 response = {
                     "status": "OK" if success else "ERROR",
                     "message": "Data stored in RDS" if success else "Failed to store data"
                 }
-                await manager.send_message("local", response)
+                await manager.send_message("local_datalogger", response)
 
             elif action == "command":
-                if client_type == "online":
+                if client_type == "online_admin":
                     if "local" in manager.active_connections:
-                        await manager.send_message("local", data)
+                        await manager.send_message("local_admin", data)
                         response = {"status": "OK", "message": "Command forwarded to local app"}
                     else:
                         response = {"status": "ERROR", "message": "No local app connected"}
-                    await manager.send_message("online", response)
-                elif client_type == "local":
-                    if "online" in manager.active_connections:
-                        await manager.send_message("online", data)
+                    await manager.send_message("online_admin", response)
+                elif client_type == "local_admin":
+                    if "online_admin" in manager.active_connections:
+                        await manager.send_message("online_admin", data)
                         response = {"status": "OK", "message": "Command forwarded to online app"}
                         await manager.send_message("local", response)
                     else:
                         response = {"status": "ERROR", "message": "No online app connected"}
-                        await manager.send_message("local", response)
+                        await manager.send_message("local_admin", response)
             elif action == "check_health":
                 # print("[WARN] Unknown action or unsupported operation.")
                 response = {"status": "OK", "message": f"waiting actions from {client_type}"}
