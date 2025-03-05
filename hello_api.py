@@ -35,7 +35,7 @@ Base = declarative_base()
 class DataEntry(Base):
     __tablename__ = DB_TABLE
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+    # timestamp = Column(DateTime, default=datetime.datetime.utcnow)
     data = Column(MySQLJSON)  # Storing the incoming payload as JSON
 
 # Create tables if they don't exist
@@ -46,8 +46,7 @@ def store_data_in_rds(data_dict: dict) -> bool:
     Stores the provided dictionary as a new DataEntry in the database.
     """
     # Add a timestamp (the model will also add one by default if not provided)
-    print(data_dict)
-    data_dict["timestamp"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # data_dict["timestamp"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     session: Session = SessionLocal()
     try:
         new_entry = DataEntry(data=data_dict)
