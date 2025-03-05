@@ -109,6 +109,7 @@ async def websocket_endpoint(websocket: WebSocket):
     # Now simply store the connection.
     await manager.connect(client_type, websocket)
     print(f"[INFO] {client_type} client connected.")
+    await manager.send_message(client_type, {"status": "CONNECTED", "message": f"{client_type} client connected"})
 
     try:
         while True:
@@ -146,7 +147,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 # print("[WARN] Unknown action or unsupported operation.")
                 response = {"status": "Waiting", "message": f"received connection from {client_type}"}
                 await manager.send_message(client_type, response)
-                
+
     except WebSocketDisconnect:
         manager.disconnect(client_type)
         print(f"[INFO] {client_type} client disconnected.")
