@@ -137,7 +137,7 @@ async def websocket_endpoint(websocket: WebSocket):
             elif action == "command":
 
                 if client_type == "online_admin":
-                    if "local" in manager.active_connections:
+                    if "local_admin" in manager.active_connections:
                         await manager.send_message("local_admin", data)
                         response = {"status": "OK", "message": "Command forwarded to local app"}
                         await manager.send_message("online_admin", response)
