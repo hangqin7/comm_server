@@ -49,7 +49,7 @@ def store_data_in_rds(data_dict: dict) -> bool:
     # data_dict["timestamp"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     session: Session = SessionLocal()
     try:
-        new_entry = DataEntry(data=data_dict)
+        new_entry = DataEntry(data_dict)
         session.add(new_entry)
         session.commit()
         print("[SUCCESS] Data inserted successfully.")
