@@ -93,8 +93,8 @@ app = FastAPI()
 async def websocket_endpoint(websocket: WebSocket):
     """
     WS server:
-    Allowed client type: {'local_admin', 'local_datalogger', 'online_admin'}
-    Allowed actions: {'check_health': all clients, 'command': local_admin, online_admin, 'streaming':local_datalogger}
+    clientType: {'local_admin', 'local_datalogger', 'online_admin'}
+    actions: {'check_health': all clients, 'command': local_admin, online_admin, 'streaming':local_datalogger}
     For local_datalogger: store data into RDS Database
     For local_admin and online_admin: Setup immediate communication
     """
@@ -131,7 +131,7 @@ async def websocket_endpoint(websocket: WebSocket):
             msg_text = await websocket.receive_text()
             message = json.loads(msg_text)
             action = message.get("action")
-            data = message.get("data", {})
+            data = message.get("data")
 
             if action == "streaming" and client_type == "local_datalogger":  # data streaming
                 # Data streaming from local app: store in RDS.
