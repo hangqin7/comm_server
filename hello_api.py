@@ -5,9 +5,9 @@ import configparser
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import create_engine, Column, Integer, DateTime
+from sqlalchemy import Table, MetaData, insert
 from sqlalchemy.dialects.mysql import JSON as MySQLJSON
 # from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from typing import Dict
 
 # ---------------------------------------------------------------------
@@ -25,41 +25,29 @@ DB_TABLE = config['mysql']['table']
 DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
 
 # Create the SQLAlchemy engine
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=3, max_overflow=2, pool_recycle=3600)
 
-# Declarative base for model definitions
-Base = declarative_base()
-
-# Define a model for the incoming data using the table name from the ini file
-class DataEntry(Base):
-    __tablename__ = DB_TABLE
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    # timestamp = Column(DateTime, default=datetime.datetime.utcnow)
-    data = Column(MySQLJSON)  # Storing the incoming payload as JSON
-
-# Create tables if they don't exist
-Base.metadata.create_all(bind=engine)
 
 def store_data_in_rds(data_dict: dict) -> bool:
-    """
-    Stores the provided dictionary as a new DataEntry in the database.
-    """
-    # Add a timestamp (the model will also add one by default if not provided)
-    # data_dict["timestamp"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    session: Session = SessionLocal()
+    meta = MetaData(bind=engine)
+    # Reflect the table structure from the database.
+    table = Table(DB_TABLE, meta, autoload_with=engine)
+    conn = engine.connect()
+    trans = conn.begin()
     try:
-        new_entry = DataEntry(data_dict)
-        session.add(new_entry)
-        session.commit()
+        data_dict["timestamp"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # Use the keys of data_dict as column names.
+        stmt = insert(table).values(**data_dict)
+        conn.execute(stmt)
+        trans.commit()
         print("[SUCCESS] Data inserted successfully.")
         return True
     except Exception as e:
-        session.rollback()
+        trans.rollback()
         print(f"[ERROR] Database error: {e}")
         return False
     finally:
-        session.close()
+        conn.close()
 
 # ---------------------------------------------------------------------
 # In-memory connection manager for WebSocket connections
