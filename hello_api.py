@@ -100,7 +100,7 @@ async def websocket_endpoint(websocket: WebSocket):
     """
     # Check for API key in query parameters or headers.
     api_key = websocket.query_params.get("api_key") or websocket.headers.get("x-api-key")
-    expected_key = "service&must**on**1216!"  # Ideally, load this from a secure config or environment variable.
+    expected_key = "service-must**on**1216!"  # Ideally, load this from a secure config or environment variable.
     if not api_key or api_key != expected_key:
         # Close the connection with an appropriate close code (e.g., 1008 for policy violation).
         await websocket.close(code=1008)
