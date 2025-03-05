@@ -143,9 +143,9 @@ async def websocket_endpoint(websocket: WebSocket):
                     else:
                         response = {"status": "ERROR", "message": "No online app connected"}
                         await manager.send_message("local", response)
-            else:
+            elif action == "check_health":
                 # print("[WARN] Unknown action or unsupported operation.")
-                response = {"status": "Waiting", "message": f"received connection from {client_type}"}
+                response = {"status": "OK", "message": f"waiting actions from {client_type}"}
                 await manager.send_message(client_type, response)
 
     except WebSocketDisconnect:
