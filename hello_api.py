@@ -94,6 +94,7 @@ async def websocket_endpoint(websocket: WebSocket):
     """
     WS server:
     Allowed client type: {'local_admin', 'local_datalogger', 'online_admin'}
+    Allowed actions: {'check_health': all clients, 'command': local_admin, online_admin, 'streaming':local_datalogger}
     For local_datalogger: store data into RDS Database
     For local_admin and online_admin: Setup immediate communication
     """
@@ -134,6 +135,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 await manager.send_message("local_datalogger", response)
 
             elif action == "command":
+
                 if client_type == "online_admin":
                     if "local" in manager.active_connections:
                         await manager.send_message("local_admin", data)
@@ -141,11 +143,12 @@ async def websocket_endpoint(websocket: WebSocket):
                     else:
                         response = {"status": "ERROR", "message": "No local app connected"}
                     await manager.send_message("online_admin", response)
+
                 elif client_type == "local_admin":
                     if "online_admin" in manager.active_connections:
                         await manager.send_message("online_admin", data)
                         response = {"status": "OK", "message": "Command forwarded to online app"}
-                        await manager.send_message("local", response)
+                        await manager.send_message("local_admin", response)
                     else:
                         response = {"status": "ERROR", "message": "No online app connected"}
                         await manager.send_message("local_admin", response)
