@@ -46,6 +46,7 @@ def store_data_in_rds(data_dict: dict) -> bool:
     Stores the provided dictionary as a new DataEntry in the database.
     """
     # Add a timestamp (the model will also add one by default if not provided)
+    print(data_dict)
     data_dict["timestamp"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     session: Session = SessionLocal()
     try:
