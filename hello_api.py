@@ -69,7 +69,7 @@ class ConnectionManager:
         self.active_connections: Dict[str, WebSocket] = {}
 
     async def connect(self, client_type: str, websocket: WebSocket):
-        await websocket.accept()
+        # Remove the duplicate accept here.
         self.active_connections[client_type] = websocket
 
     def disconnect(self, client_type: str):
@@ -81,6 +81,7 @@ class ConnectionManager:
         if ws:
             await ws.send_text(json.dumps(message))
 
+
 manager = ConnectionManager()
 
 # ---------------------------------------------------------------------
@@ -90,10 +91,10 @@ app = FastAPI()
 # WebSocket Endpoint for communication
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    # Accept the WebSocket connection
-    await websocket.accept()  # <- This line is crucial!
+    # Accept the WebSocket connection once.
+    await websocket.accept()
 
-    # Wait for the client to send its initialization payload
+    # Wait for the client to send its initialization payload.
     try:
         init_msg = await websocket.receive_text()
         init_data = json.loads(init_msg)
@@ -105,6 +106,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await websocket.close(code=1003)
         return
 
+    # Now simply store the connection.
     await manager.connect(client_type, websocket)
     print(f"[INFO] {client_type} client connected.")
 
@@ -116,7 +118,7 @@ async def websocket_endpoint(websocket: WebSocket):
             data = message.get("data", {})
 
             if action == "data" and client_type == "local":
-                # Data streaming from local app: store in RDS
+                # Data streaming from local app: store in RDS.
                 success = store_data_in_rds(data)
                 response = {
                     "status": "OK" if success else "ERROR",
@@ -145,6 +147,7 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(client_type)
         print(f"[INFO] {client_type} client disconnected.")
+
 
 
 # ---------------------------------------------------------------------
