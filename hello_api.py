@@ -80,10 +80,17 @@ app = FastAPI()
 async def websocket_endpoint(websocket: WebSocket):
     """
     WS server:
-    clientType: {'local_admin', 'local_datalogger', 'online_admin'}
-    actions: {'check_health': all clients, 'command': local_admin, online_admin, 'streaming':local_datalogger}
+    clientType: {'local_admin1d', 'local_admin', 'local_datalogger', 'online_admin'}
+    actions: {'check_health'/'message': all clients, 'command': local_admin, online_admin, 'streaming':local_datalogger}
     For local_datalogger: store data into RDS Database
     For local_admin and online_admin: Setup immediate communication
+
+    A message should be like
+    message = {
+            "clientType": "online_admin",  # or 'local_admin', local_datalogger', 'local_admin1d'
+            "action": "command",  # or 'streaming', 'check_health'
+            "data": {"command": command}  # or {data_pack}
+        }
     """
     # Check for API key in query parameters or headers.
     api_key = websocket.query_params.get("api_key") or websocket.headers.get("x-api-key")
@@ -148,6 +155,11 @@ async def websocket_endpoint(websocket: WebSocket):
                     else:
                         response = {"status": "ERROR", "message": "No online app connected"}
                         await manager.send_message(client_type, response)
+
+            elif action == "check_access" and client_type == "online_admin":
+                if "local_admin" in manager.active_connections:
+                    response = {"status": "listening", "message": "Local app listening"}
+                    await manager.send_message("online_admin", response)
 
             elif action == "check_health":
                 # print("[WARN] Unknown action or unsupported operation.")
