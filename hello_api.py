@@ -158,7 +158,10 @@ async def websocket_endpoint(websocket: WebSocket):
 
             elif action == "check_access" and client_type == "online_admin":
                 if "local_admin" in manager.active_connections:
-                    response = {"status": "listening", "message": "Local app listening"}
+                    response = {"status": "enabled", "message": "Local app listening"}
+                    await manager.send_message("online_admin", response)
+                else:
+                    response = {"status": "disabled", "message": "Remote control not allowed"}
                     await manager.send_message("online_admin", response)
 
             elif action == "check_health":
