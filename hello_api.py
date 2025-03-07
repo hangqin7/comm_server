@@ -101,7 +101,7 @@ async def websocket_endpoint(websocket: WebSocket):
         init_msg = await websocket.receive_text()
         init_data = json.loads(init_msg)
         client_type = init_data.get("clientType")
-        if client_type not in ("local_admin", "online_admin", "local_datalogger"):
+        if client_type not in ("local_admin1d", "local_admin", "online_admin", "local_datalogger"):
             await websocket.close(code=1003)
             return
     except Exception as e:
@@ -140,14 +140,14 @@ async def websocket_endpoint(websocket: WebSocket):
                         response = {"status": "ERROR", "message": "No local app connected"}
                     await manager.send_message("online_admin", response)
 
-                elif client_type == "local_admin":
+                elif client_type == "local_admin" or "local_admin1d":
                     if "online_admin" in manager.active_connections:
                         await manager.send_message("online_admin", data)
                         response = {"status": "OK", "message": "Command forwarded to online app"}
-                        await manager.send_message("local_admin", response)
+                        await manager.send_message(client_type, response)
                     else:
                         response = {"status": "ERROR", "message": "No online app connected"}
-                        await manager.send_message("local_admin", response)\
+                        await manager.send_message(client_type, response)
 
             elif action == "check_health":
                 # print("[WARN] Unknown action or unsupported operation.")
