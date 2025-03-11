@@ -167,7 +167,7 @@ async def websocket_endpoint(websocket: WebSocket):
             elif action == "request" and client_type == "online_admin":
                 if "local_admin1d" in manager.active_connections:
                     response = {"request": "Online app request permission"}
-                    await manager.send_message("online_admin1d", response)
+                    await manager.send_message("local_admin1d", response)
 
             elif action == "check_health":
                 # print("[WARN] Unknown action or unsupported operation.")
