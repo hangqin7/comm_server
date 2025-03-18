@@ -1,6 +1,7 @@
 import os
 import json
 import datetime
+import pytz
 import configparser
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import JSONResponse
@@ -27,6 +28,9 @@ DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
 # Create the SQLAlchemy engine
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=3, max_overflow=2, pool_recycle=3600)
 
+# Timezone
+cet = pytz.timezone("Europe/Stockholm")
+
 
 def store_data_in_rds(data_dict: dict) -> bool:
     meta = MetaData()
@@ -34,7 +38,7 @@ def store_data_in_rds(data_dict: dict) -> bool:
     conn = engine.connect()
     trans = conn.begin()
     try:
-        data_dict["timestamp"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        data_dict["timestamp"] = datetime.datetime.now(cet).strftime("%Y-%m-%d %H:%M:%S")
         # Use the keys of data_dict as column names.
         stmt = insert(table).values(**data_dict)
         conn.execute(stmt)
