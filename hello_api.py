@@ -32,15 +32,16 @@ engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=3, max_overfl
 cet = pytz.timezone("Europe/Stockholm")
 
 
-def store_data_in_rds(data_dict: dict) -> bool:
+def store_data_in_rds(data_dict: dict, table_name) -> bool:
     meta = MetaData()
-    table = Table(DB_TABLE, meta, autoload_with=engine)
+    table = Table(table_name, meta, autoload_with=engine)
     conn = engine.connect()
     trans = conn.begin()
     try:
-        data_dict["timestamp"] = datetime.datetime.now(cet).strftime("%Y-%m-%d %H:%M:%S")
+        # data_dict["timestamp"] = datetime.datetime.now(cet).strftime("%Y-%m-%d %H:%M:%S")
         # Use the keys of data_dict as column names.
-        stmt = insert(table).values(**data_dict)
+        # stmt = insert(table).values(**data_dict)
+        stmt = table.insert().values({'data': data_dict})
         conn.execute(stmt)
         trans.commit()
         print("[SUCCESS] Data inserted successfully.")
@@ -133,7 +134,8 @@ async def websocket_endpoint(websocket: WebSocket):
 
             if action == "streaming" and client_type == "local_datalogger":  # data streaming
                 # Data streaming from local app: store in RDS.
-                success = store_data_in_rds(data)
+                store_data_in_rds(data['bms'], 'bms_data')
+                success = store_data_in_rds(data['ems'], 'ems_data')
                 response = {
                     "status": "OK" if success else "ERROR",
                     "message": "Data stored in RDS" if success else "Failed to store data"
